@@ -23,24 +23,24 @@ app.post('/convert', (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'Brak URL' });
 
-  // Szablon %(title)s pobiera prawdziwy tytuł wideo i oczyszcza go z niedozwolonych znaków
+  // Szablon nazwy wyjściowej z tytułem z YouTube
   const outputTemplate = path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s');
 
-  const cmd = `yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "${outputTemplate}" "${url}"`;
+  // Używamy klientów mobilnych (mweb, android), które mijają blokady IP 429 dla serwerów chmurowych
+  const cmd = `yt-dlp -x --audio-format mp3 --extractor-args "youtube:player_client=mweb,android" -o "${outputTemplate}" "${url}"`;
 
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
       console.error('Błąd yt-dlp:', stderr || error.message);
-      return res.status(500).json({ error: 'Błąd konwersji po stronie serwera.' });
+      return res.status(500).json({ error: 'Błąd konwersji yt-dlp' });
     }
 
-    // Odnajdujemy najnowszy utworzony plik MP3 w katalogu pobierania
     fs.readdir(DOWNLOAD_DIR, (err, files) => {
       if (err || files.length === 0) {
-        return res.status(500).json({ error: 'Nie odnaleziono pliku po konwersji.' });
+        return res.status(500).json({ error: 'Nie odnaleziono pliku.' });
       }
 
-      // Sortowanie plików po dacie modyfikacji (najnowszy na początku)
+      // Znajdź najnowszy pobrany plik
       const latestFile = files
         .map(file => ({
           name: file,
