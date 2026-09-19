@@ -26,8 +26,8 @@ app.post('/convert', (req, res) => {
   const outputFilename = `audio_${Date.now()}.mp3`;
   const outputPath = path.join(DOWNLOAD_DIR, outputFilename);
 
-  // Użycie klientów mweb, tv_embedded oraz automatyczne wyciąganie po atrybutach
-  const cmd = `yt-dlp -x --audio-format mp3 --extractor-args "youtube:player_client=mweb,tv" --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -o "${outputPath}" "${url}"`;
+  // Użycie pliku ciasteczek cookies.txt do ominięcia weryfikacji botów na Renderze
+  const cmd = `yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "${outputPath}" "${url}"`;
 
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
