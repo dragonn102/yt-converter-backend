@@ -15,7 +15,6 @@ if (!fs.existsSync(DOWNLOAD_DIR)) {
 
 app.use('/downloads', express.static(DOWNLOAD_DIR));
 
-// Strona główna (żeby nie było komunikatu "Cannot GET /")
 app.get('/', (req, res) => {
   res.send('Serwer YT Downloader Dim3n w chmurze działa poprawnie!');
 });
@@ -27,15 +26,15 @@ app.post('/convert', (req, res) => {
   const outputFilename = `audio_${Date.now()}.mp3`;
   const outputPath = path.join(DOWNLOAD_DIR, outputFilename);
 
-  const cmd = `yt-dlp -x --audio-format mp3 -o "${outputPath}" "${url}"`;
+  // Wymuszenie użycia klienta mobilnego (android, ios) i obdarzenie deno jako JS runtime
+  const cmd = `yt-dlp -x --audio-format mp3 --extractor-args "youtube:player_client=android,ios" -o "${outputPath}" "${url}"`;
 
-  exec(cmd, (error) => {
+  exec(cmd, (error, stdout, stderr) => {
     if (error) {
-      console.error('Błąd yt-dlp:', error);
-      return res.status(500).json({ error: 'Konwersja nie powiodła się.' });
+      console.error('Błąd yt-dlp:', stderr || error.message);
+      return res.status(500).json({ error: 'Błąd konwersji yt-dlp' });
     }
 
-    // Wykrywanie adresu HTTPS w chmurze Render
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.get('host');
     const downloadUrl = `${protocol}://${host}/downloads/${outputFilename}`;
