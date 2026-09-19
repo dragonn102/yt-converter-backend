@@ -15,6 +15,11 @@ if (!fs.existsSync(DOWNLOAD_DIR)) {
 
 app.use('/downloads', express.static(DOWNLOAD_DIR));
 
+// Strona główna (żeby nie było komunikatu "Cannot GET /")
+app.get('/', (req, res) => {
+  res.send('Serwer YT Downloader Dim3n w chmurze działa poprawnie!');
+});
+
 app.post('/convert', (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'Brak URL' });
@@ -22,7 +27,6 @@ app.post('/convert', (req, res) => {
   const outputFilename = `audio_${Date.now()}.mp3`;
   const outputPath = path.join(DOWNLOAD_DIR, outputFilename);
 
-  // Wywołanie zainstalowanego yt-dlp z konwersją do mp3
   const cmd = `yt-dlp -x --audio-format mp3 -o "${outputPath}" "${url}"`;
 
   exec(cmd, (error) => {
@@ -31,10 +35,16 @@ app.post('/convert', (req, res) => {
       return res.status(500).json({ error: 'Konwersja nie powiodła się.' });
     }
 
-    res.json({ url: `http://localhost:3000/downloads/${outputFilename}` });
+    // Wykrywanie adresu HTTPS w chmurze Render
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.get('host');
+    const downloadUrl = `${protocol}://${host}/downloads/${outputFilename}`;
+
+    res.json({ url: downloadUrl });
   });
 });
 
-app.listen(3000, () => {
-  console.log('Serwer YT Downloader Dim3n działa na http://localhost:3000');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Serwer działa na porcie ${PORT}`);
 });
