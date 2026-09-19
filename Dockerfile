@@ -1,5 +1,6 @@
 FROM node:18-slim
 
+# Instalacja ffmpeg, python3 i najnowszej wersji yt-dlp
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     python3 \
