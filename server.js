@@ -16,7 +16,7 @@ if (!fs.existsSync(DOWNLOAD_DIR)) {
 app.use('/downloads', express.static(DOWNLOAD_DIR));
 
 app.get('/', (req, res) => {
-  res.send('Serwer YT Downloader Dim3n w chmurze działa poprawnie!');
+  res.send('Serwer YT Downloader Dim3n działa poprawnie!');
 });
 
 app.post('/convert', (req, res) => {
@@ -26,8 +26,8 @@ app.post('/convert', (req, res) => {
   const outputFilename = `audio_${Date.now()}.mp3`;
   const outputPath = path.join(DOWNLOAD_DIR, outputFilename);
 
-  // Wymuszenie użycia klienta mobilnego (android, ios) i obdarzenie deno jako JS runtime
-  const cmd = `yt-dlp -x --audio-format mp3 --extractor-args "youtube:player_client=android,ios" -o "${outputPath}" "${url}"`;
+  // Użycie klientów mweb, tv_embedded oraz automatyczne wyciąganie po atrybutach
+  const cmd = `yt-dlp -x --audio-format mp3 --extractor-args "youtube:player_client=mweb,tv" --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -o "${outputPath}" "${url}"`;
 
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
