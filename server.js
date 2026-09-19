@@ -23,23 +23,37 @@ app.post('/convert', (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'Brak URL' });
 
-  const outputFilename = `audio_${Date.now()}.mp3`;
-  const outputPath = path.join(DOWNLOAD_DIR, outputFilename);
+  // Szablon %(title)s pobiera prawdziwy tytuł wideo i oczyszcza go z niedozwolonych znaków
+  const outputTemplate = path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s');
 
-  // Użycie pliku ciasteczek cookies.txt do ominięcia weryfikacji botów na Renderze
-  const cmd = `yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "${outputPath}" "${url}"`;
+  const cmd = `yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "${outputTemplate}" "${url}"`;
 
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
       console.error('Błąd yt-dlp:', stderr || error.message);
-      return res.status(500).json({ error: 'Błąd konwersji yt-dlp' });
+      return res.status(500).json({ error: 'Błąd konwersji po stronie serwera.' });
     }
 
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-    const host = req.get('host');
-    const downloadUrl = `${protocol}://${host}/downloads/${outputFilename}`;
+    // Odnajdujemy najnowszy utworzony plik MP3 w katalogu pobierania
+    fs.readdir(DOWNLOAD_DIR, (err, files) => {
+      if (err || files.length === 0) {
+        return res.status(500).json({ error: 'Nie odnaleziono pliku po konwersji.' });
+      }
 
-    res.json({ url: downloadUrl });
+      // Sortowanie plików po dacie modyfikacji (najnowszy na początku)
+      const latestFile = files
+        .map(file => ({
+          name: file,
+          time: fs.statSync(path.join(DOWNLOAD_DIR, file)).mtime.getTime()
+        }))
+        .sort((a, b) => b.time - a.time)[0].name;
+
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      const host = req.get('host');
+      const downloadUrl = `${protocol}://${host}/downloads/${encodeURIComponent(latestFile)}`;
+
+      res.json({ url: downloadUrl, filename: latestFile });
+    });
   });
 });
 
