@@ -23,16 +23,15 @@ app.post('/convert', (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'Brak URL' });
 
-  // Szablon nazwy wyjściowej z tytułem z YouTube
   const outputTemplate = path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s');
 
-  // Używamy klientów mobilnych (mweb, android), które mijają blokady IP 429 dla serwerów chmurowych
-  const cmd = `yt-dlp -x --audio-format mp3 --extractor-args "youtube:player_client=mweb,android" -o "${outputTemplate}" "${url}"`;
+  // Klient ios_music / tv_embedded omija bloki 429 oraz wymóg rejestracji botów
+  const cmd = `yt-dlp -x --audio-format mp3 --extractor-args "youtube:player_client=ios_music,tv_embedded" --cookies cookies.txt -o "${outputTemplate}" "${url}"`;
 
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
       console.error('Błąd yt-dlp:', stderr || error.message);
-      return res.status(500).json({ error: 'Błąd konwersji yt-dlp' });
+      return res.status(500).json({ error: 'Błąd konwersji po stronie serwera.' });
     }
 
     fs.readdir(DOWNLOAD_DIR, (err, files) => {
@@ -40,7 +39,6 @@ app.post('/convert', (req, res) => {
         return res.status(500).json({ error: 'Nie odnaleziono pliku.' });
       }
 
-      // Znajdź najnowszy pobrany plik
       const latestFile = files
         .map(file => ({
           name: file,
